@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["vite/client", "node"],
+    "paths": { "#platform": ["./src/server/platform.node.ts"] }
+  },
+  "include": ["src"],
+  "exclude": ["src/server/platform.cloudflare.ts", "src/server/db/schema.sqlite.ts"]
+}

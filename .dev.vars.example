@@ -1,0 +1,3 @@
+# 手元の Worker だけで使う秘密の値。.dev.vars にコピーして使う（.dev.vars は Git に入れない）
+BETTER_AUTH_SECRET=local-only-secret-change-me-0123456789
+ADMIN_EMAIL=admin@example.com

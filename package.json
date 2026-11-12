@@ -1,0 +1,40 @@
+{
+  "name": "reservation-practice-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "build:node": "DEPLOY_TARGET=node vite build",
+    "start:node": "node .output/server/index.mjs",
+    "typecheck": "wrangler types && tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
+    "cf-typegen": "wrangler types",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "db:migrate:pg": "node scripts/migrate-pg.mjs",
+    "smoke": "bash scripts/smoke.sh"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "5.104.2",
+    "@tanstack/react-router": "1.170.42",
+    "@tanstack/react-start": "1.168.61",
+    "@trpc/client": "11.19.0",
+    "@trpc/server": "11.19.0",
+    "better-auth": "1.7.7",
+    "drizzle-orm": "1.0.0-rc.4",
+    "postgres": "3.4.9",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "1.63.1",
+    "@types/node": "24.19.2",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7",
+    "@vitejs/plugin-react": "6.1.2",
+    "nitro": "3.0.261103-rc",
+    "typescript": "7.0.2",
+    "vite": "8.3.4",
+    "wrangler": "4.149.0"
+  }
+}

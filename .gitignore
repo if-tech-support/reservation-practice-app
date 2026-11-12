@@ -1,0 +1,13 @@
+node_modules
+dist
+.output
+.nitro
+.wrangler
+.tanstack
+.dev.vars
+.env
+.env.node
+*.tfstate
+*.tfstate.*
+.terraform
+worker-configuration.d.ts

@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "reservation-practice-local",
+  "main": "@tanstack/react-start/server-entry",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  // いちばん上の設定は、手元（bun run dev）で使う。
+  // 検証・本番の Worker は、コースの中で env.staging / env.production として足していく。
+  "vars": {
+    "APP_ENV": "local",
+    "BETTER_AUTH_URL": "http://localhost:5173"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "reservation-practice-local",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations/sqlite"
+    }
+  ]
+}
