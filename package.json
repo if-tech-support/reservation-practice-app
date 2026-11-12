@@ -7,8 +7,8 @@
     "build": "vite build",
     "build:node": "DEPLOY_TARGET=node vite build",
     "start:node": "node .output/server/index.mjs",
-    "typecheck": "wrangler types && tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
-    "cf-typegen": "wrangler types",
+    "typecheck": "wrangler types --env-file .dev.vars.example && tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
+    "cf-typegen": "wrangler types --env-file .dev.vars.example",
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
     "db:migrate:pg": "node scripts/migrate-pg.mjs",
     "smoke": "bash scripts/smoke.sh"
