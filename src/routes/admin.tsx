@@ -12,6 +12,12 @@ function AdminPage() {
     queryFn: () => trpc.admin.reservations.query(),
     retry: false
   })
+  // 添付ファイルの機能が無い構成では、空の一覧が返る
+  const attachments = useQuery({
+    queryKey: ['admin', 'attachments'],
+    queryFn: () => trpc.admin.attachments.query(),
+    retry: false
+  })
   if (all.isPending) return <p className="muted">読み込み中…</p>
   if (all.error) return <p className="error">この画面を見る権限がありません。</p>
   return (
@@ -26,6 +32,7 @@ function AdminPage() {
             <th>名前</th>
             <th>人数</th>
             <th>登録した人</th>
+            {attachments.data && attachments.data.length > 0 && <th>添付</th>}
           </tr>
         </thead>
         <tbody>
@@ -35,6 +42,17 @@ function AdminPage() {
               <td>{item.title}</td>
               <td>{item.partySize}</td>
               <td>{item.userEmail}</td>
+              {attachments.data && attachments.data.length > 0 && (
+                <td>
+                  {attachments.data
+                    .filter((file) => file.reservationId === item.id)
+                    .map((file) => (
+                      <div key={file.id}>
+                        <a href={`/api/attachments/${file.id}`}>{file.filename}</a>
+                      </div>
+                    ))}
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
-import type { FormEvent } from 'react'
+import { type FormEvent, useState } from 'react'
 import { trpc } from '../lib/clients'
 
 export const Route = createFileRoute('/')({ component: HomePage })
@@ -17,7 +17,44 @@ function HomePage() {
     queryFn: () => trpc.reservation.list.query(),
     enabled: signedIn
   })
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ['reservations'] })
+  const attachmentsOn = Boolean(me.data?.features.attachments)
+  const attachments = useQuery({
+    queryKey: ['attachments'],
+    queryFn: () => trpc.attachment.list.query(),
+    enabled: signedIn && attachmentsOn
+  })
+  const [uploadError, setUploadError] = useState('')
+  const [uploadingId, setUploadingId] = useState('')
+  const refresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['reservations'] })
+    queryClient.invalidateQueries({ queryKey: ['attachments'] })
+  }
+  const removeAttachment = useMutation({
+    mutationFn: (id: string) => trpc.attachment.remove.mutate({ id }),
+    onSuccess: refresh
+  })
+  const upload = async (reservationId: string, file: File | undefined) => {
+    if (!file) return
+    setUploadError('')
+    setUploadingId(reservationId)
+    const body = new FormData()
+    body.append('file', file)
+    try {
+      const response = await fetch(`/api/reservations/${reservationId}/attachments`, {
+        method: 'POST',
+        body
+      })
+      if (!response.ok) {
+        const data = (await response.json().catch(() => null)) as { error?: string } | null
+        setUploadError(data?.error ?? '添付できませんでした')
+      } else {
+        refresh()
+      }
+    } catch {
+      setUploadError('添付できませんでした')
+    }
+    setUploadingId('')
+  }
   const create = useMutation({
     mutationFn: (input: Parameters<typeof trpc.reservation.create.mutate>[0]) =>
       trpc.reservation.create.mutate(input),
@@ -85,6 +122,10 @@ function HomePage() {
         <h2>自分の予約</h2>
         {list.isPending && <p className="muted">読み込み中…</p>}
         {list.data?.length === 0 && <p className="muted">まだ予約はありません。</p>}
+        {attachmentsOn && (
+          <p className="muted">PDF・PNG・JPEG を1件5MBまで、1つの予約に3件まで添付できます。</p>
+        )}
+        {uploadError && <p className="error">{uploadError}</p>}
         {list.data && list.data.length > 0 && (
           <table>
             <thead>
@@ -99,9 +140,49 @@ function HomePage() {
               {list.data.map((item) => (
                 <tr key={item.id}>
                   <td>{formatDate(item.startsAt)}</td>
-                  <td>{item.title}</td>
+                  <td>
+                    {item.title}
+                    {attachments.data
+                      ?.filter((file) => file.reservationId === item.id)
+                      .map((file) => (
+                        <div key={file.id} className="muted">
+                          <a href={`/api/attachments/${file.id}`}>{file.filename}</a>{' '}
+                          <button
+                            type="button"
+                            className="sub"
+                            disabled={removeAttachment.isPending}
+                            onClick={() => removeAttachment.mutate(file.id)}
+                          >
+                            削除
+                          </button>
+                        </div>
+                      ))}
+                  </td>
                   <td>{item.partySize}</td>
                   <td>
+                    {attachmentsOn && (
+                      <label className="sub-button">
+                        <button
+                          type="button"
+                          className="sub"
+                          disabled={uploadingId === item.id}
+                          onClick={(event) =>
+                            event.currentTarget.parentElement?.querySelector('input')?.click()
+                          }
+                        >
+                          添付
+                        </button>
+                        <input
+                          type="file"
+                          hidden
+                          accept="application/pdf,image/png,image/jpeg"
+                          onChange={(event) => {
+                            upload(item.id, event.target.files?.[0])
+                            event.target.value = ''
+                          }}
+                        />
+                      </label>
+                    )}{' '}
                     <button
                       type="button"
                       className="sub"

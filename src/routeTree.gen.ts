@@ -13,8 +13,10 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as ApiAttachmentsAttachmentIdRouteImport } from './routes/api/attachments.$attachmentId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiTrpcSplatRouteImport } from './routes/api/trpc/$'
+import { Route as ApiReservationsReservationIdAttachmentsRouteImport } from './routes/api/reservations.$reservationId.attachments'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -36,6 +38,12 @@ const ApiHealthRoute = ApiHealthRouteImport.update({
   path: '/api/health',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAttachmentsAttachmentIdRoute =
+  ApiAttachmentsAttachmentIdRouteImport.update({
+    id: '/api/attachments/$attachmentId',
+    path: '/api/attachments/$attachmentId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -46,22 +54,32 @@ const ApiTrpcSplatRoute = ApiTrpcSplatRouteImport.update({
   path: '/api/trpc/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiReservationsReservationIdAttachmentsRoute =
+  ApiReservationsReservationIdAttachmentsRouteImport.update({
+    id: '/api/reservations/$reservationId/attachments',
+    path: '/api/reservations/$reservationId/attachments',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/login': typeof LoginRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/attachments/$attachmentId': typeof ApiAttachmentsAttachmentIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
+  '/api/reservations/$reservationId/attachments': typeof ApiReservationsReservationIdAttachmentsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/login': typeof LoginRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/attachments/$attachmentId': typeof ApiAttachmentsAttachmentIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
+  '/api/reservations/$reservationId/attachments': typeof ApiReservationsReservationIdAttachmentsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -69,23 +87,42 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/login': typeof LoginRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/attachments/$attachmentId': typeof ApiAttachmentsAttachmentIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
+  '/api/reservations/$reservationId/attachments': typeof ApiReservationsReservationIdAttachmentsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/admin' | '/login' | '/api/health' | '/api/auth/$' | '/api/trpc/$'
+    | '/'
+    | '/admin'
+    | '/login'
+    | '/api/health'
+    | '/api/attachments/$attachmentId'
+    | '/api/auth/$'
+    | '/api/trpc/$'
+    | '/api/reservations/$reservationId/attachments'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/login' | '/api/health' | '/api/auth/$' | '/api/trpc/$'
+  to:
+    | '/'
+    | '/admin'
+    | '/login'
+    | '/api/health'
+    | '/api/attachments/$attachmentId'
+    | '/api/auth/$'
+    | '/api/trpc/$'
+    | '/api/reservations/$reservationId/attachments'
   id:
     | '__root__'
     | '/'
     | '/admin'
     | '/login'
     | '/api/health'
+    | '/api/attachments/$attachmentId'
     | '/api/auth/$'
     | '/api/trpc/$'
+    | '/api/reservations/$reservationId/attachments'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -93,8 +130,10 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   LoginRoute: typeof LoginRoute
   ApiHealthRoute: typeof ApiHealthRoute
+  ApiAttachmentsAttachmentIdRoute: typeof ApiAttachmentsAttachmentIdRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiTrpcSplatRoute: typeof ApiTrpcSplatRoute
+  ApiReservationsReservationIdAttachmentsRoute: typeof ApiReservationsReservationIdAttachmentsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -127,6 +166,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/attachments/$attachmentId': {
+      id: '/api/attachments/$attachmentId'
+      path: '/api/attachments/$attachmentId'
+      fullPath: '/api/attachments/$attachmentId'
+      preLoaderRoute: typeof ApiAttachmentsAttachmentIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -141,6 +187,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiTrpcSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/reservations/$reservationId/attachments': {
+      id: '/api/reservations/$reservationId/attachments'
+      path: '/api/reservations/$reservationId/attachments'
+      fullPath: '/api/reservations/$reservationId/attachments'
+      preLoaderRoute: typeof ApiReservationsReservationIdAttachmentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -149,18 +202,22 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   LoginRoute: LoginRoute,
   ApiHealthRoute: ApiHealthRoute,
+  ApiAttachmentsAttachmentIdRoute: ApiAttachmentsAttachmentIdRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiTrpcSplatRoute: ApiTrpcSplatRoute,
+  ApiReservationsReservationIdAttachmentsRoute:
+    ApiReservationsReservationIdAttachmentsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
 
 import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
+import type { startInstance } from './start.ts'
 declare module '@tanstack/react-start' {
   interface Register {
     ssr: true
     router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
   }
 }

@@ -18,5 +18,9 @@
       "database_id": "00000000-0000-0000-0000-000000000000",
       "migrations_dir": "migrations/sqlite"
     }
-  ]
+  ],
+  // 手元で試すための R2 と KV。検証・本番では、環境ごとに別のものを足す。
+  // send_email は足さない（手元ではメールは無効）
+  "r2_buckets": [{ "binding": "FILES", "bucket_name": "reservation-practice-local-files" }],
+  "kv_namespaces": [{ "binding": "CONFIG", "id": "00000000000000000000000000000000" }]
 }

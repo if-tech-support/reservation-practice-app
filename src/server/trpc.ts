@@ -1,6 +1,6 @@
 import { initTRPC, TRPCError } from '@trpc/server'
 import { z } from 'zod'
-import { config } from '#platform'
+import { config, features } from '#platform'
 import { auth } from './auth'
 import {
   cancelReservation,
@@ -42,7 +42,9 @@ const reservationInput = z.object({
 export const appRouter = t.router({
   me: t.procedure.query(({ ctx }) => ({
     user: ctx.user ? { name: ctx.user.name, email: ctx.user.email } : null,
-    isAdmin: Boolean(ctx.user && config.adminEmail && ctx.user.email === config.adminEmail)
+    isAdmin: Boolean(ctx.user && config.adminEmail && ctx.user.email === config.adminEmail),
+    // 画面に出すかどうかの判断に使う。Cloudflare 構成だけの機能は、AWS 構成では false
+    features: { attachments: Boolean(features.attachments) }
   })),
   reservation: t.router({
     list: userProcedure.query(({ ctx }) => listReservationsOf(ctx.user.id)),
@@ -58,10 +60,22 @@ export const appRouter = t.router({
     }),
     cancel: userProcedure
       .input(z.object({ id: z.string().min(1) }))
-      .mutation(({ ctx, input }) => cancelReservation(ctx.user.id, input.id))
+      .mutation(async ({ ctx, input }) => {
+        // 予約を取り消したら、添付（R2 のファイル）も消す
+        await features.attachments?.removeAllOfReservation(ctx.user.id, input.id)
+        await cancelReservation(ctx.user.id, input.id)
+      })
+  }),
+  attachment: t.router({
+    list: userProcedure.query(async ({ ctx }) => (await features.attachments?.listOf(ctx.user.id)) ?? []),
+    remove: userProcedure.input(z.object({ id: z.string().min(1) })).mutation(async ({ ctx, input }) => {
+      if (!features.attachments) throw new TRPCError({ code: 'NOT_FOUND' })
+      await features.attachments.remove(ctx.user.id, input.id)
+    })
   }),
   admin: t.router({
-    reservations: adminProcedure.query(() => listAllReservations())
+    reservations: adminProcedure.query(() => listAllReservations()),
+    attachments: adminProcedure.query(async () => (await features.attachments?.listAll()) ?? [])
   })
 })
 
