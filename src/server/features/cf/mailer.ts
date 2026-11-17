@@ -12,10 +12,18 @@ import {
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
-// 生の IP は保存・ログ出力しない。SHA-256 の先頭16文字（8バイト）だけ持つ
-const hashIp = async (ip: string) => {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(ip))
-  return Array.from(new Uint8Array(digest).slice(0, 8), (b) => b.toString(16).padStart(2, '0')).join('')
+// 生の IP は保存・ログ出力しない。アプリの秘密の値を鍵にした HMAC-SHA256 の先頭16文字（8バイト）だけ持つ
+// （鍵なしの SHA-256 だと、IPv4 は総当たりで元の IP に戻せるため）
+const hashIp = async (ip: string, secret: string) => {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  )
+  const mac = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(ip))
+  return Array.from(new Uint8Array(mac).slice(0, 8), (b) => b.toString(16).padStart(2, '0')).join('')
 }
 
 // 確認と記録を1つの INSERT ... SELECT にまとめる（SQLite は1文を不可分に実行するので、
@@ -32,13 +40,14 @@ export const createMailer = (deps: {
   email: SendEmail
   from: string
   db: Db
+  secret: string
 }): Mailer => {
-  const { email, from, db } = deps
+  const { email, from, db, secret } = deps
 
   return {
     async reserve(to, kind, clientIp) {
       const now = Date.now()
-      const ipHash = clientIp ? await hashIp(clientIp) : null
+      const ipHash = clientIp ? await hashIp(clientIp, secret) : null
       const result = await db.$client
         .prepare(RESERVE_SQL)
         .bind(

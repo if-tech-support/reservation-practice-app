@@ -11,6 +11,7 @@ type OptionalBindings = {
   CONFIG?: KVNamespace
   EMAIL?: SendEmail
   MAIL_FROM?: string
+  BETTER_AUTH_SECRET?: string
 }
 
 export const createFeatures = (
@@ -22,7 +23,9 @@ export const createFeatures = (
     attachments: env.FILES ? createAttachmentStore({ bucket: env.FILES, db }) : null,
     // メールは send_email と MAIL_FROM の両方があるときだけ有効（MAIL_FROM が空なら無効）
     mailer:
-      env.EMAIL && env.MAIL_FROM ? createMailer({ email: env.EMAIL, from: env.MAIL_FROM, db }) : null,
+      env.EMAIL && env.MAIL_FROM && env.BETTER_AUTH_SECRET
+        ? createMailer({ email: env.EMAIL, from: env.MAIL_FROM, db, secret: env.BETTER_AUTH_SECRET })
+        : null,
     maintenance: env.CONFIG ? createMaintenanceFlag(env.CONFIG) : null
   }
 }
