@@ -58,3 +58,25 @@ export const reservation = sqliteTable('reservation', {
   note: text('note').notNull().default(''),
   createdAt: ts('created_at').notNull()
 })
+
+// 予約への添付ファイル。本体は非公開の R2 に置き、ここには持ち主と元のファイル名だけを持つ
+export const attachment = sqliteTable('attachment', {
+  id: text('id').primaryKey(),
+  reservationId: text('reservation_id').notNull(),
+  userId: text('user_id').notNull(),
+  r2Key: text('r2_key').notNull().unique(),
+  filename: text('filename').notNull(),
+  contentType: text('content_type').notNull(),
+  size: integer('size').notNull(),
+  createdAt: ts('created_at').notNull()
+})
+
+// 確認メールの送信記録。送りすぎの上限を数えるために使う
+export const mailLog = sqliteTable('mail_log', {
+  id: text('id').primaryKey(),
+  toAddress: text('to_address').notNull(),
+  kind: text('kind').notNull(),
+  // 接続元 IP の SHA-256 の先頭16文字。生の IP は保存しない
+  ipHash: text('ip_hash'),
+  createdAt: ts('created_at').notNull()
+})

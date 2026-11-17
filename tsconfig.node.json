@@ -5,5 +5,5 @@
     "paths": { "#platform": ["./src/server/platform.node.ts"] }
   },
   "include": ["src"],
-  "exclude": ["src/server/platform.cloudflare.ts", "src/server/db/schema.sqlite.ts"]
+  "exclude": ["src/server/platform.cloudflare.ts", "src/server/db/schema.sqlite.ts", "src/server/features/cf"]
 }

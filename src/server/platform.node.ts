@@ -3,6 +3,7 @@
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import * as schema from './db/schema.pg'
+import { type Features, noFeatures } from './features/types'
 
 const required = (name: string) => {
   const value = process.env[name]
@@ -21,6 +22,9 @@ const sql = postgres(required('DATABASE_URL'), {
 })
 
 export const db = drizzle({ client: sql })
+
+// Cloudflare 構成だけの機能は、この構成ではすべて無効
+export const features: Features = noFeatures
 
 export const config = {
   appEnv: process.env.APP_ENV ?? 'local',
