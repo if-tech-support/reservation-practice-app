@@ -1,6 +1,7 @@
 import { initTRPC, TRPCError } from '@trpc/server'
 import { z } from 'zod'
 import { config, features } from '#platform'
+import { isAdminUser } from './admin'
 import { auth } from './auth'
 import {
   cancelReservation,
@@ -26,7 +27,7 @@ const userProcedure = t.procedure.use(({ ctx, next }) => {
 
 // 管理者（ADMIN_EMAIL と同じメールアドレスの人）だけが呼べる
 const adminProcedure = userProcedure.use(({ ctx, next }) => {
-  if (!config.adminEmail || ctx.user.email !== config.adminEmail) {
+  if (!isAdminUser(ctx.user)) {
     throw new TRPCError({ code: 'FORBIDDEN' })
   }
   return next()
@@ -42,7 +43,7 @@ const reservationInput = z.object({
 export const appRouter = t.router({
   me: t.procedure.query(({ ctx }) => ({
     user: ctx.user ? { name: ctx.user.name, email: ctx.user.email } : null,
-    isAdmin: Boolean(ctx.user && config.adminEmail && ctx.user.email === config.adminEmail),
+    isAdmin: Boolean(ctx.user && isAdminUser(ctx.user)),
     // 画面に出すかどうかの判断に使う。Cloudflare 構成だけの機能は、AWS 構成では false
     features: { attachments: Boolean(features.attachments) }
   })),

@@ -49,14 +49,15 @@ export const auth = betterAuth({
             await mailer.send({ to: user.email, kind: 'verification', ...mail })
           }
         },
-        // 登録・再送の前に上限を確かめる。メール送信は裏で動き失敗がAPIに返らないため、ここで先に断る
+        // 登録・再送の前に送信の枠を取る（確認と記録は1つの SQL）。メール送信は裏で動き失敗がAPIに返らないため、ここで先に断る
         hooks: {
           before: createAuthMiddleware(async (ctx) => {
             if (ctx.path !== '/sign-up/email' && ctx.path !== '/send-verification-email') return
             const email = (ctx.body as { email?: unknown } | undefined)?.email
             if (typeof email !== 'string' || !email) return
             try {
-              await mailer.assertCanSend(email)
+              const headers = ctx.headers ?? ctx.request?.headers
+              await mailer.reserve(email, 'verification', headers?.get('cf-connecting-ip') ?? null)
             } catch (error) {
               if (error instanceof MailLimitError) {
                 throw new APIError('TOO_MANY_REQUESTS', { message: error.message })

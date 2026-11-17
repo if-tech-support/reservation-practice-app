@@ -76,5 +76,7 @@ export const mailLog = sqliteTable('mail_log', {
   id: text('id').primaryKey(),
   toAddress: text('to_address').notNull(),
   kind: text('kind').notNull(),
+  // 接続元 IP の SHA-256 の先頭16文字。生の IP は保存しない
+  ipHash: text('ip_hash'),
   createdAt: ts('created_at').notNull()
 })

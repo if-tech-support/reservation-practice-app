@@ -25,6 +25,12 @@ const cleanFilename = (name: string) =>
   // biome-ignore lint/suspicious/noControlCharactersInRegex: 制御文字を除くため
   name.replace(/[\\/\u0000-\u001f\u007f]/g, '').trim().slice(0, 100) || 'file'
 
+const RESERVE_SQL = `
+INSERT INTO attachment (id, reservation_id, user_id, r2_key, filename, content_type, size, created_at)
+SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8
+WHERE (SELECT COUNT(*) FROM attachment WHERE reservation_id = ?2) < ?9
+  AND (SELECT COUNT(*) FROM attachment WHERE user_id = ?3) < ?10`
+
 const toInfo = (row: typeof attachment.$inferSelect): AttachmentInfo => ({
   id: row.id,
   reservationId: row.reservationId,
@@ -60,29 +66,6 @@ export const createAttachmentStore = (deps: { bucket: R2Bucket; db: Db }): Attac
         .where(and(eq(reservation.id, reservationId), eq(reservation.userId, userId)))
       if (!owned) return { ok: false, status: 404, message: '予約が見つかりません' }
 
-      const [perReservation] = await db
-        .select({ n: count() })
-        .from(attachment)
-        .where(eq(attachment.reservationId, reservationId))
-      if ((perReservation?.n ?? 0) >= ATTACHMENT_MAX_PER_RESERVATION) {
-        return {
-          ok: false,
-          status: 409,
-          message: `1つの予約に添付できるのは ${ATTACHMENT_MAX_PER_RESERVATION} 件までです`
-        }
-      }
-      const [perUser] = await db
-        .select({ n: count() })
-        .from(attachment)
-        .where(eq(attachment.userId, userId))
-      if ((perUser?.n ?? 0) >= ATTACHMENT_MAX_PER_USER) {
-        return {
-          ok: false,
-          status: 409,
-          message: `添付は1人 ${ATTACHMENT_MAX_PER_USER} 件までです`
-        }
-      }
-
       const buffer = await file.arrayBuffer()
       if (detectType(new Uint8Array(buffer, 0, Math.min(16, buffer.byteLength))) !== file.type) {
         return { ok: false, status: 415, message: 'ファイルの中身が種類と合っていません' }
@@ -91,7 +74,6 @@ export const createAttachmentStore = (deps: { bucket: R2Bucket; db: Db }): Attac
       const id = crypto.randomUUID()
       // 推測できないキー。元のファイル名はキーに入れない
       const r2Key = `attachments/${reservationId}/${crypto.randomUUID()}`
-      await bucket.put(r2Key, buffer, { httpMetadata: { contentType: file.type } })
       const row = {
         id,
         reservationId,
@@ -102,10 +84,41 @@ export const createAttachmentStore = (deps: { bucket: R2Bucket; db: Db }): Attac
         size: buffer.byteLength,
         createdAt: new Date()
       }
+      // R2 に書く前に、件数が上限未満のときだけ行を入れて枠を取る（1つの SQL なので同時アップロードでも超えない）
+      const reserved = await db.$client
+        .prepare(RESERVE_SQL)
+        .bind(
+          row.id,
+          reservationId,
+          userId,
+          r2Key,
+          row.filename,
+          row.contentType,
+          row.size,
+          row.createdAt.getTime(),
+          ATTACHMENT_MAX_PER_RESERVATION,
+          ATTACHMENT_MAX_PER_USER
+        )
+        .run()
+      if (reserved.meta.changes === 0) {
+        const [perReservation] = await db
+          .select({ n: count() })
+          .from(attachment)
+          .where(eq(attachment.reservationId, reservationId))
+        if ((perReservation?.n ?? 0) >= ATTACHMENT_MAX_PER_RESERVATION) {
+          return {
+            ok: false,
+            status: 409,
+            message: `1つの予約に添付できるのは ${ATTACHMENT_MAX_PER_RESERVATION} 件までです`
+          }
+        }
+        return { ok: false, status: 409, message: `添付は1人 ${ATTACHMENT_MAX_PER_USER} 件までです` }
+      }
       try {
-        await db.insert(attachment).values(row)
+        await bucket.put(r2Key, buffer, { httpMetadata: { contentType: file.type } })
       } catch (error) {
-        await bucket.delete(r2Key)
+        // 書けなかったら枠を返す
+        await db.delete(attachment).where(eq(attachment.id, id))
         throw error
       }
       return { ok: true, attachment: toInfo(row) }

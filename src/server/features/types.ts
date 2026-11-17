@@ -11,6 +11,7 @@ export const ATTACHMENT_TYPES = ['application/pdf', 'image/png', 'image/jpeg'] a
 export const MAIL_MIN_INTERVAL_MS = 60 * 1000
 export const MAIL_MAX_PER_ADDRESS_PER_DAY = 5
 export const MAIL_MAX_PER_DAY = 200
+export const MAIL_MAX_PER_IP_PER_DAY = 20
 export const MAIL_LIMIT_MESSAGE = 'しばらくしてからもう一度お試しください'
 
 export class MailLimitError extends Error {
@@ -53,8 +54,9 @@ export interface AttachmentStore {
 export type MailMessage = { to: string; subject: string; text: string; html: string; kind: string }
 
 export interface Mailer {
-  // 上限を超えるときは MailLimitError を投げる
-  assertCanSend(to: string): Promise<void>
+  // 送信の枠を取る（上限の確認と記録を1つの SQL で行う）。上限を超えるときは MailLimitError を投げる。
+  // clientIp は接続元 IP（不明なら null）。送信そのものは send が行い、send は枠を取らない
+  reserve(to: string, kind: string, clientIp: string | null): Promise<void>
   send(message: MailMessage): Promise<void>
 }
 
